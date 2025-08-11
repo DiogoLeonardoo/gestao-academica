@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/materia.dart';
 import '../../models/atividade.dart';
+import '../../services/materia_service.dart';
 import '../../widgets/cards/atividade_card.dart';
 import '../../widgets/dialogs/adicionar_atividade_dialog.dart';
 import '../atividade/atividade_detail_page.dart';
@@ -15,6 +16,8 @@ class MateriaDetailPage extends StatefulWidget {
 }
 
 class _MateriaDetailPageState extends State<MateriaDetailPage> {
+  final MateriaService _materiaService = MateriaService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,9 +25,26 @@ class _MateriaDetailPageState extends State<MateriaDetailPage> {
         title: Text(widget.materia.nome),
         backgroundColor: Colors.blue[600],
       ),
-      body: widget.materia.atividades.isEmpty
-          ? _buildEmptyState()
-          : _buildAtividadesList(),
+      body: StreamBuilder<List<Atividade>>(
+        stream: _materiaService.getAtividades(widget.materia.id),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Erro ao carregar atividades: ${snapshot.error}'),
+            );
+          }
+
+          final atividades = snapshot.data ?? [];
+          
+          return atividades.isEmpty
+            ? _buildEmptyState()
+            : _buildAtividadesList(atividades);
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _adicionarAtividade,
         child: Icon(Icons.add),
@@ -49,11 +69,11 @@ class _MateriaDetailPageState extends State<MateriaDetailPage> {
     );
   }
 
-  Widget _buildAtividadesList() {
+  Widget _buildAtividadesList(List<Atividade> atividades) {
     return ListView.builder(
-      itemCount: widget.materia.atividades.length,
+      itemCount: atividades.length,
       itemBuilder: (context, index) {
-        final atividade = widget.materia.atividades[index];
+        final atividade = atividades[index];
         return AtividadeCard(
           atividade: atividade,
           onTap: () => _navegarParaAtividade(atividade),
@@ -68,23 +88,56 @@ class _MateriaDetailPageState extends State<MateriaDetailPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AtividadeDetailPage(atividade: atividade),
+        builder: (context) => AtividadeDetailPage(
+          atividade: atividade,
+          materiaId: widget.materia.id,
+        ),
       ),
-    ).then((_) => setState(() {}));
+    );
   }
 
   void _toggleStatus(Atividade atividade) {
-    setState(() {
-      atividade.status = atividade.status == StatusAtividade.pendente
-          ? StatusAtividade.concluido
-          : StatusAtividade.pendente;
-    });
+    // Atualize o status no Firestore
+    final novoStatus = atividade.status == StatusAtividade.pendente
+        ? StatusAtividade.concluido
+        : StatusAtividade.pendente;
+    
+    final atividadeAtualizada = Atividade(
+      id: atividade.id,
+      titulo: atividade.titulo,
+      descricao: atividade.descricao,
+      dataLimite: atividade.dataLimite,
+      status: novoStatus,
+      convidados: atividade.convidados,
+    );
+    
+    _materiaService.updateAtividade(widget.materia.id, atividade.id, atividadeAtualizada);
   }
 
   void _excluirAtividade(Atividade atividade) {
-    setState(() {
-      widget.materia.atividades.remove(atividade);
-    });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirmar exclusão'),
+        content: Text('Deseja realmente excluir a atividade "${atividade.titulo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () {
+              _materiaService.deleteAtividade(widget.materia.id, atividade.id);
+              Navigator.pop(context);
+            },
+            child: Text('Excluir'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _adicionarAtividade() {
@@ -93,9 +146,7 @@ class _MateriaDetailPageState extends State<MateriaDetailPage> {
       builder: (context) => AdicionarAtividadeDialog(),
     ).then((atividade) {
       if (atividade != null) {
-        setState(() {
-          widget.materia.atividades.add(atividade);
-        });
+        _materiaService.addAtividade(widget.materia.id, atividade);
       }
     });
   }
