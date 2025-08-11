@@ -18,3 +18,4 @@ O sistema consiste em um gerenciador de atividades acadêmicas que permite:
 ## Tecnologias Utilizadas
 
 Este projeto foi desenvolvido utilizando Flutter.
+- Firebase para autenticação de usuários e armazenamento de dados
