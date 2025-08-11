@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../models/atividade.dart';
 import '../../models/convidado.dart';
+import '../../services/materia_service.dart';
 import '../../widgets/cards/convidado_card.dart';
 import '../../widgets/dialogs/adicionar_convidado_dialog.dart';
 import '../../utils/date_formatter.dart';
 
 class AtividadeDetailPage extends StatefulWidget {
   final Atividade atividade;
+  final String materiaId;
 
-  const AtividadeDetailPage({Key? key, required this.atividade}) : super(key: key);
+  const AtividadeDetailPage({
+    Key? key, 
+    required this.atividade,
+    required this.materiaId,
+  }) : super(key: key);
 
   @override
   _AtividadeDetailPageState createState() => _AtividadeDetailPageState();
 }
 
 class _AtividadeDetailPageState extends State<AtividadeDetailPage> {
+  final MateriaService _materiaService = MateriaService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,6 +144,13 @@ class _AtividadeDetailPageState extends State<AtividadeDetailPage> {
   void _excluirConvidado(Convidado convidado) {
     setState(() {
       widget.atividade.convidados.remove(convidado);
+      
+      // Atualizar no Firestore após remover o convidado
+      _materiaService.updateAtividade(
+        widget.materiaId,
+        widget.atividade.id,
+        widget.atividade,
+      );
     });
   }
 
@@ -148,6 +162,13 @@ class _AtividadeDetailPageState extends State<AtividadeDetailPage> {
       if (convidado != null) {
         setState(() {
           widget.atividade.convidados.add(convidado);
+          
+          // Atualizar no Firestore após adicionar o convidado
+          _materiaService.updateAtividade(
+            widget.materiaId,
+            widget.atividade.id,
+            widget.atividade,
+          );
         });
       }
     });
