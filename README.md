@@ -1,6 +1,6 @@
 # Atividade de Gestão Acadêmica
 
-Este é um projeto desenvolvido para a disciplina de Tópicos Especiais II do curso de Análise e Desenvolvimento de Sistemas do Instituto Federal de Sergipe (IFS).
+Este é um projeto desenvolvido para a disciplina de Tópicos Especiais I do curso de Análise e Desenvolvimento de Sistemas do Instituto Federal de Sergipe (IFS).
 
 ## Sobre o Projeto
 
@@ -8,6 +8,8 @@ O sistema consiste em um gerenciador de atividades acadêmicas que permite:
 - Adicionar e gerenciar atividades
 - Cadastrar convidados/participantes
 - Gerenciar matérias e suas respectivas atividades
+- Controle de atividades feitas e pendentes
+- Autenticação de Usuários
 
 ## Equipe de Desenvolvimento
 
